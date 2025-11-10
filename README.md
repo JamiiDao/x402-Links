@@ -36,17 +36,33 @@ The domain is of two types:
 
     The `discover/` domain is used to discover x402 resources on a server. What follows the `discover/` domain is a URI used to fetch the resources as JSON as described in the x402 specification. The URI does not need to be in the route, query parameters can be defined by the server meaning that the URL is agnostic as long as it is a HTTPS url
     ```sh
-    # example; note the URL after `pay/` domain ins percent encoded
+    # example; note the URL after `pay/` domain in percent encoded
     x402://discover/https%3A%2F%2Fexample.com%2Fx402%2Fdiscover
     ```
 
 2. `pay/`
 
-    This is used to perform a payment action on a x402 resource. In the case of Alice above, like buying the book, no subscriptions, no notifications, no signups. `once/` is followed by the x402 endpoint that will handle her request using the x402 headers defined in the x402 specification.
-    ```sh
-    # example; note the URL after `pay/` domain ins percent encoded
-    x402://pay/https%3A%2F%2Fexample.com%2Fx402%2Fpublisher%3FToly-The-Great%26name%3DConqueror-of-Blockhains-Taker-Of-Markets%26version%3Dlatest-version
+    This is used to perform a payment action on a x402 resource. In the case of Alice above, like buying the book, no subscriptions, no notifications, no signups. `pay/` is followed by a Base64URL safe encoded JSON string describing the resource with the following JSON fields.
+    1. `uri`: This `string` is the URL of the resource that needs an x402 payment to access. It is a plain URI, not encoded
+    2. `action`: This describes the action the app should take. This field is a `string` and it can be one of the following: 
+        - `surf` - A user wants to access a paywalled resource using HTTP
+        - `a2a`: This action is for an agent and the metadata field describes the endpoint to fetch the `agent-card.json`
+        - `mcp`: Uses the MCP protocol  and the metadata field describes the endpoint to fetch the MCP metadata.
+    3. `metadata`: Optional `string` field that contains the URI to fetch the metadata for either the `agent-card.json` if `a2a` is used as the action or the MCP protocol metadata. This field is ommited if `surf` is used as the `action`.
+
+    > Example  JSON metadata for paying to access an agent
+    ```JSON
+    {
+        "uri": "https://example.com/x402/publisher?Toly-The-Great&name=Conqueror-of-Blockhains-Taker-Of-Markets&version=latest-version",
+        "action": "a2a",
+        "metadata": "https://example.com/x402/.well-known/agent-card.json"
+    }
     ```
+    This can now be used by Base64URL encoding the JSON string and the final URI will be
+    ```sh
+    x402://pay/<Base64URL encoded JSON metadata>
+    ```
+    Using this JSON structure allows metadata for agentic and MCP communication to be located easily since the x402 protocol dosen't specify fields for this in the `PaymentRequirements` object.
 
 ## Usage Examples
 
@@ -134,6 +150,21 @@ URLs that support server-side events like agent-to-agent communication can simpl
 }
 
 ```
+
+## Example UI
+Some examples of dapps implementing the x402-links specification for Solana dapp store'
+
+### x402 /discover route
+![Discover image](./discover.png)
+
+
+### A detailed view of a discovered route
+![Discover image](./discover.png)
+
+
+### x402 live updates from a long running agent service
+![Discover image](./live-updates.png)
+
 
 
 ## Summary
